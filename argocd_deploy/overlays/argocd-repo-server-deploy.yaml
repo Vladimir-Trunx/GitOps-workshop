@@ -4,26 +4,32 @@ kind: Deployment
 metadata:
   name: argocd-repo-server
 spec:
+  selector:
+    matchLabels:
+      app: myapp
   template:
+    metadata:
+      labels:
+        app: myapp
     spec:
       # 1. Define an emptyDir volume which will hold the custom binaries
       volumes:
-      - name: custom-tools
-        emptyDir: {}
+        - name: custom-tools
+          emptyDir: {}
       # 2. Use an init container to download/copy custom binaries into the emptyDir
       initContainers:
-      - name: download-tools
-        image: busybox:stable
-        command: [sh, -c]
-        args:
-        - wget -qO- https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv4.5.3/kustomize_v4.5.3_linux_amd64.tar.gz | tar -xvzf - &&
-          mv kustomize /custom-tools/kustomize_4_5_3
-        volumeMounts:
-        - mountPath: /custom-tools
-          name: custom-tools
+        - name: download-tools
+          image: busybox:stable
+          command: [sh, -c]
+          args:
+            - wget -qO- https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv4.5.3/kustomize_v4.5.3_linux_amd64.tar.gz | tar -xvzf - &&
+              mv kustomize /custom-tools/kustomize_4_5_3
+          volumeMounts:
+            - mountPath: /custom-tools
+              name: custom-tools
       # 3. Volume mount the custom binary to the bin directory (overriding the existing version)
       containers:
-      - name: argocd-repo-server
-        volumeMounts:
-        - mountPath: /custom-tools
-          name: custom-tools
+        - name: argocd-repo-server
+          volumeMounts:
+            - mountPath: /custom-tools
+              name: custom-tools
